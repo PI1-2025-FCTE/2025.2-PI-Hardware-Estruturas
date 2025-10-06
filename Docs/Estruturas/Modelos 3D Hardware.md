@@ -23,7 +23,7 @@ https://grabcad.com/library/lm393-motor-speed-measuring-sensor-module-1
   - <s> Testado: https://grabcad.com/library/lm393-motor-speed-measuring-sensor-module-1
   - Compatível:
   - Dimensões: 31,3mm X 14,2mm X 11,815mm </s>
-  - [ ] Modelado
+  - [x] Modelado
 
 - DISCO ENCODER: 
 https://grabcad.com/library/encoder-disk-2
@@ -36,7 +36,7 @@ https://grabcad.com/library/encoder-disk-2
   - <s> Testado:
   - Compatível:
   - Dimensões: </s>
-  - [ ] Modelado
+  - [x] Modelado
 
 - ACELERÔMETRO: 
 https://grabcad.com/library/mpu-9250-1
@@ -60,7 +60,7 @@ https://grabcad.com/library/esp32-deek-robot-terminal-adapter-1
   - [x] Modelado
     
 - SENSOR DE ULTRASSONICO Hc-sr04:
-  - [ ] Modelado
+  - [x] Modelado
 
 - PONTE H L298N:
   - [x] Modelado
@@ -75,4 +75,4 @@ https://grabcad.com/library/esp32-deek-robot-terminal-adapter-1
 
     
 - REGULADOR DE TENSÃO LM2596:
-  - [ ] Modelado
+  - [x] Modelado
