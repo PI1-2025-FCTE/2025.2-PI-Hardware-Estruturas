@@ -61,3 +61,4 @@ Todos os dispositivos compartilham o mesmo GND, garantindo que o circuito tenha 
 
 Este diagrama do circuito mostra todas as conexões entre os componentes. Como descrito acima, as entradas da ponte H são controladas pelas portas lógicas do ESP32, enquanto os motores DC são alimentados e controlados por ela. O regulador de tensão L7805 garante que a Ponte H receba 5V para sua entrada lógica, e o regulador de tensão LM317 fornece os 3.3V necessários para o ESP32.
 
+ass. @EricAraujoBsB
