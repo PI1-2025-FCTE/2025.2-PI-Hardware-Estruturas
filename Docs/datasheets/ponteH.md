@@ -1,4 +1,4 @@
-# Explicação do Circuito com Ponte H L298N, Motores DC, Reguladores de Tensão e ESP32 WROOM
+# Ponte H com motores DC
 
 Este circuito é composto por diversos componentes que permitem o controle de dois motores DC usando uma ponte H L298N, juntamente com reguladores de tensão L7805 e LM317, e um microcontrolador ESP32 WROOM. A seguir, detalharemos a função e a ligação de cada componente:
 
