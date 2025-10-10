@@ -2,7 +2,8 @@
 Este projeto está vinculado a disciplina de Projeto Integrador 1, da Universidade de Brasília, ministrada pelo Prof. Dr. Lui Txai Calvoso Habl. Tem por objetivo o desenvolvimento de um **veículo autônomo** capaz de seguir trajetórias predefinidas e depositar um objeto do tamanho, proporção e fragilidade de um ovo médio em uma caixa acolchoada ao término da trajetória, sendo operado por uma interface gráfica que retornará o tempo e a trajetória do veiculo. 
 
 [Documentação Latex](https://www.overleaf.com/5331879129xcxkbjkxxrrc#4cba63)
-[esquemático circuito](https://easyeda.com/editor#project_id=84deaf6a43b146378309fcd01e6a131c)
+
+[Esquemático do circuito](https://easyeda.com/editor#project_id=84deaf6a43b146378309fcd01e6a131c)
 ## Objetivos
 
 - **Trajetórias e Navegação**:
@@ -71,4 +72,5 @@ Cada membro da equipe será responsável por diferentes áreas, incluindo hardwa
 Este projeto está licenciado sob a [Licença MIT](https://opensource.org/licenses/MIT).
 
 ---
+
 
