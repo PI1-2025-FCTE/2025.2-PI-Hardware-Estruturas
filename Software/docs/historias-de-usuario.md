@@ -91,17 +91,6 @@ A metodologia adotada segue o padrão ágil, onde as histórias de usuário são
 
 ---
 
-### US7 - Detalhar trajetória atual
-
-**Como** usuário, **quero** visualizar detalhes da trajetória em execução **para** acompanhar em tempo real o andamento do carrinho.
-
-#### Critérios de Aceitação
-- [ ] O sistema deve ser capaz de receber e processar dados da ESP32.
-- [ ] O sistema deve exibir em tempo real os comandos que estão sendo executados por meio de desenho.  
-- [ ] O sistema deve mostrar informações de status como posição atual e etapa em andamento através de gráficos.  
-- [ ] Caso ocorra falha na transmissão, o sistema deve exibir uma mensagem de erro.
-
-
 ### USX - Nome da História de Usuário
 
 **Como** [tipo de usuário], **quero** [funcionalidade desejada] **para** [benefício ou objetivo alcançado]
