@@ -8,8 +8,8 @@
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
-  char buffer[] = "a1245ea1300d";
+  delay(5000);
+  char buffer[] = "a0245ea0020da0001";
     int i = 0;
     while(i<strlen(buffer)){
         if(buffer[i] == AVANCAR){
@@ -32,7 +32,5 @@ void setup() {
 }
 
 void loop() {
-  Serial.printf("teste1\n");
-  delay(1000);
 
 }
