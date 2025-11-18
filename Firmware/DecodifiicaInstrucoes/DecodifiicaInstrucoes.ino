@@ -27,9 +27,11 @@ void setup() {
         }
     i++;
     Serial.printf("%d\n", i);
+    //Posta no servidor MQTT o que foi executado
     }
-
 }
+
+
 
 void loop() {
 

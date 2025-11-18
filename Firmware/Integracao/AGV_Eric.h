@@ -47,7 +47,7 @@ class DCMotor {
       void ForwardAGV() {
         Motor1.Forward();
         Motor2.Forward();
-      }
+    }
   
       // Método para o AGV ir para trás
       void BackwardAGV() {

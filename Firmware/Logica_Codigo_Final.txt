@@ -1,0 +1,30 @@
+Dados de sensores:
+	Em tasks que são chamadas a cada x ms (x é definido no próprio código)
+	- no código Firmware\BasicOTAplusMultitaskplusODP_PI1\BasicOTAplusMultitaskplusODP_PI1.ino
+Encoder:
+	Interrupção de pino, toda vez que a interrupção é chamada, incrementa-se a distancia percorrida
+
+Decodifica:
+	Toda vez que se recebe um novo conjunto de instruções (quando a função call-back é chamada), estas são decodificadas enquanto são executadas.
+	- Código decodificaInstrucoes.ino
+
+Controle dos motores:
+	Deve-se escrever um código que utilize o pwm nos motores para que aja uma forma suave de executar as instruções
+	Essa parte toda será feita por meio de métodos na biblioteca AGV_Eric.h
+
+#Formato básico do código completo:
+
+
+\\Importacao de bibliotecas
+\\Definicao de funções (puxar dados dos sensores, comunicação wi-fi..)
+
+setup(){
+	\\Inicializacao de comunicações
+	\\Inicializacao do Wifi
+	\\Inicializacao da interrupções do encoder "(attachInterrupt(digitalPinToInterrupt(ENCODER_PIN), encoderISR, RISING);"
+	\\Definicao das tasks
+}
+
+loop(){
+	\\nada aqui
+}

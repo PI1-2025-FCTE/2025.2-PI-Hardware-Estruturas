@@ -17,9 +17,9 @@ const char* status_topic = "devices/esp32/status";
 const char* trajeto_topic = "devices/esp32/trajeto";
 const char* client_topic = "devices/esp32/commands";
 
-// Controle de tempo
-unsigned long lastStatusTime = 0;
-unsigned long lastTrajetoTime = 0;
+// // Controle de tempo
+// unsigned long lastStatusTime = 0;
+// unsigned long lastTrajetoTime = 0;
 
 // Struct Trajeto
 typedef struct Trajeto {
