@@ -5,6 +5,7 @@
 // #include <WiFi.h>
 #include <AGV_Eric.h>
 #include <ESP32Servo.h>
+#include "../bateria/bateria.h"  // Include do monitor de bateria
 
 // === Bluetooth ===
 #include "BluetoothSerial.h"
@@ -40,6 +41,9 @@ TwoWire I2C_2 = TwoWire(1);
 // === Criação dos sensores ===
 Adafruit_INA219 ina219(0x40);
 Adafruit_MPU6050 mpu6050;
+
+// === Monitor de bateria ===
+MonitorBateria monitorBateria(&ina219, &I2C_1);
   
 // Instância dos motores e do AGV
 DCMotor Motor1, Motor2;
@@ -69,6 +73,11 @@ void setup() {
     SerialBT.println("Não foi possível encontrar o INA219!");
   } else {
     SerialBT.println("INA219 detectado no barramento 1.");
+  }
+
+  // Inicializar monitor de bateria
+  if (!monitorBateria.inicializar()) {
+    SerialBT.println("Erro na inicialização do monitor de bateria!");
   }
 
   // Inicializando I2C_2 para o MPU6050
@@ -104,6 +113,10 @@ void loop() {
   float current = ina219.getCurrent_mA();
   float voltage = ina219.getBusVoltage_V();
   float power = ina219.getPower_mW();
+
+  // === Monitor de bateria integrado ===
+  SerialBT.println("===== Monitor de Bateria =====");
+  monitorBateria.monitorar();
 
   // === Leitura do MPU6050 ===
   sensors_event_t a, g, temp;
