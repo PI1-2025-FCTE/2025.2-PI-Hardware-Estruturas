@@ -3,12 +3,12 @@
 #include <ArduinoJson.h>
 
 // Configurações WiFi
-const char* ssid = "ANDRE_5907";
-const char* password = "99634M{m";
+const char* ssid = "debian";
+const char* password = "sfCgZ0BW";
 
 // Configurações MQTT
-const char* mqtt_server = "0.tcp.sa.ngrok.io"; // Exemplo: "broker.hivemq.com"
-const int mqtt_port = 14171;
+const char* mqtt_server = "10.42.0.1"; // Exemplo: "broker.hivemq.com"
+const int mqtt_port = 1883;
 const char* mqtt_user = "user";           // seu usuário MQTT
 const char* mqtt_pass = "password";             // sua senha MQTT
 const char* data_topic = "esp32.data";
@@ -18,8 +18,8 @@ const char* trajeto_topic = "devices/esp32/trajeto";
 const char* client_topic = "devices/esp32/commands";
 
 // // Controle de tempo
-// unsigned long lastStatusTime = 0;
-// unsigned long lastTrajetoTime = 0;
+unsigned long lastStatusTime = 0;
+unsigned long lastTrajetoTime = 0;
 
 // Struct Trajeto
 typedef struct Trajeto {

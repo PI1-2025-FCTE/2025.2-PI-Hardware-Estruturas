@@ -3,7 +3,9 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 // #include <WiFi.h>
-#include <atuadores.h>
+// #include "../bateria/bateria.h"
+#include "Atuadores.h"
+#include "Encoder.h"
 #include <ESP32Servo.h>
 
 // === Bluetooth ===
@@ -33,6 +35,18 @@ BluetoothSerial SerialBT;
 // const char* ssid = "ANDRE_5907";
 // const char* password = "99634M{m";
 
+// === Comunicacao MQTT ===
+// Configurações MQTT
+// const char* mqtt_server = "10.42.0.1"; // Exemplo: "broker.hivemq.com"
+// const int mqtt_port = 1883;
+// const char* mqtt_user = "user";           // seu usuário MQTT
+// const char* mqtt_pass = "password";             // sua senha MQTT
+// const char* data_topic = "esp32.data";
+// const char* device_id = "esp32";
+// const char* status_topic = "devices/esp32/status";
+// const char* trajeto_topic = "devices/esp32/trajeto";
+// const char* client_topic = "devices/esp32/commands";
+
 // === Criação das interfaces I2C ===
 TwoWire I2C_1 = TwoWire(0);
 TwoWire I2C_2 = TwoWire(1);
@@ -42,8 +56,11 @@ Adafruit_INA219 ina219(0x40);
 Adafruit_MPU6050 mpu6050;
   
 // Instância dos motores e do AGV
-DCMotor Motor1, Motor2;
+// DCMotor Motor1, Motor2;
 AGV AGV1;
+Encoder encoderEsq(0);
+Encoder encoderDir(1);
+
 Servo servo_1;
 uint8_t motor_angle;
 
@@ -60,10 +77,11 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   
-    servo_1.attach(33);
-    AGV1.Create(12, 13, 14, 27, 220);  // Inicializando o AGV com os pinos dos motores
-    AGV1.Sensores(25, 26, 34, 35, 6.5); // Inicializando os sensores do AGV: Ultrassônico (trig, echo), Encoders (pino1, pino2), diâmetro da roda em cm
-
+  servo_1.attach(15);
+  AGV1.Create(12, 13, 14, 27, 220);  // Inicializando o AGV com os pinos dos motores
+  // AGV1.Sensores(25, 26, 25, 4); // Inicializando os sensores do AGV: Ultrassônico (trig, echo), Encoders (pino1, pino2), diâmetro da roda em cm
+  encoderEsq.PinOut(25, 0); // Exemplo
+  encoderDir.PinOut(4, 1); // Exemplo
   // Inicializando I2C_1 para o INA219
   I2C_1.begin(SDA_1, SCL_1, 100000);
   if (!ina219.begin(&I2C_1)) { // Endereço padrão do INA219 é 0x40
@@ -83,48 +101,72 @@ void setup() {
   SerialBT.println("Pronto para leituras!\n");
 
   //Move axis to specific positions, both limits 0, 180 and mid 90
-  servo_1.write(0);
-  Serial.println("MOVE TO POS_0");              
-  delay(3000);           
+  // servo_1.write(0);
+  // Serial.println("MOVE TO POS_0");              
+  // delay(3000);           
   
-  servo_1.write(90);
-  Serial.println("MOVE TO POS_90");              
-  delay(3000);   
+  // servo_1.write(90);
+  // Serial.println("MOVE TO POS_90");              
+  // delay(3000);   
   
-  servo_1.write(180);
-  Serial.println("MOVE TO POS_180");              
-  delay(3000);   
-
+  // servo_1.write(180);
+  // Serial.println("MOVE TO POS_180");   
+  AGV1.ForwardAGV();           
+  delay(4000);   
+  AGV1.StopAGV();
 }
 
 void loop() {
 
-  AGV1.ForwardAGV();
+  // AGV1.StopAGV();
+  // delay(500);
 
-  // === Leitura do INA219 ===
-  float current = ina219.getCurrent_mA();
-  float voltage = ina219.getBusVoltage_V();
-  float power = ina219.getPower_mW();
+  // SerialBT.println("===== Monitor de Bateria =====");
+  // // monitorBateria.monitorar();
 
-  // === Leitura do MPU6050 ===
-  sensors_event_t a, g, temp;
-  mpu6050.getEvent(&a, &g, &temp);
+  // // === Leitura do INA219 ===
+  // float current = ina219.getCurrent_mA();
+  // float voltage = ina219.getBusVoltage_V();
+  // float power = ina219.getPower_mW();
 
-  // === Exibe os valores ===
-  SerialBT.println("===== Leitura INA219 =====");
-  SerialBT.printf("Corrente = %f mA | Tensao = %f | Potencia = %f mW\n", current, voltage, power); 
+  // // === Leitura do MPU6050 ===
+  // sensors_event_t a, g, temp;
+  // mpu6050.getEvent(&a, &g, &temp);
 
-  SerialBT.println("===== Leitura MPU6050 =====");
-  SerialBT.printf("Acelerômetro: X= %f m/s^2 Y= %f m/s^2 Z= %f m/s^2\n", a.acceleration.x, a.acceleration.y, a.acceleration.z); 
+  // // === Exibe os valores ===
+  // SerialBT.println("===== Leitura INA219 =====");
+  // SerialBT.printf("Corrente = %f mA | Tensao = %f | Potencia = %f mW\n", current, voltage, power); 
 
-  SerialBT.printf("Giroscópio: X= %f rad/s Y= %f rad/s Z=%f rad/s\n", g.gyro.x, g.gyro.y, g.gyro.z); 
+  // SerialBT.println("===== Leitura MPU6050 =====");
+  // SerialBT.printf("Acelerômetro: X= %f m/s^2 Y= %f m/s^2 Z= %f m/s^2\n", a.acceleration.x, a.acceleration.y, a.acceleration.z); 
 
-  SerialBT.printf("Temperatura: %f C\n", temp.temperature);
+  // SerialBT.printf("Giroscópio: X= %f rad/s Y= %f rad/s Z=%f rad/s\n", g.gyro.x, g.gyro.y, g.gyro.z); 
 
-  servo_1.write(0);
-  delay(3000);
-  servo_1.write(180);
-  delay(3000);
+  // SerialBT.printf("Temperatura: %f C\n", temp.temperature);
+
+  // servo_1.write(0);
+  // delay(3000);
+  // servo_1.write(180);
+  // delay(3000);
+  Serial.println(encoderEsq.calcularDistancia());
+  Serial.println(encoderDir.calcularDistancia());
+  delay(100);
+  // AGV1.LeftAGV();
+  // delay(2000);
+  // AGV1.RightAGV();
+  // delay(2000);
+  // AGV1.ForwardAGV();
+  if(Serial.available()){
+    char leitura = Serial.read();
+    if (leitura == 'a'){
+      distanciaPorCm(50.0); // Move o AGV para frente por 50 cm
+    } else if (leitura == 'd'){
+      encoderDir.deletaDistancia();
+      encoderEsq.deletaDistancia();
+    }
+  }
+  // AGV1.StopAGV();
+  // delay(10000);
   // SerialBT.println("FROM 0 to 180");  
   // for (motor_angle = 0; motor_angle <= 180; motor_angle ++) { 
   //   servo_1.write(motor_angle);
@@ -141,5 +183,22 @@ void loop() {
   // }
 
   // delay(500);
+}
+
+void distanciaPorCm(float cm) {
+    // float distancia = encoderEsq.calcularDistancia();
+    // float distanciaEnc2 = encoderDir.calcularDistancia();
+    // float distancia = (distanciaEnc1 + distanciaEnc2) / 2.0;
+    float dist = 0;
+    AGV1.ForwardAGV();
+    while(dist < cm) {
+        dist = encoderDir.calcularDistancia();
+        Serial.printf("Distancia = %f\n", dist);
+        delay(100);
+    }
+    AGV1.StopAGV();
+    dist = 0;
+    encoderDir.deletaDistancia();
+    encoderEsq.deletaDistancia();
 }
   

@@ -32,34 +32,34 @@ class DCMotor {
     }
 };
 
-class HCSR04{
-  int echo, trig;
-  float TempEcho = 0;
+// class HCSR04{
+//   int echo, trig;
+//   float TempEcho = 0;
 
-  public:
+//   public:
 
-    void PinOut(int in1, int in2){
-      echo = in2;
-      trig = in1;
-      pinMode(trig, OUTPUT);
-      digitalWrite(trig, LOW);
-      pinMode(echo, INPUT);
-    }
+//     void PinOut(int in1, int in2){
+//       echo = in2;
+//       trig = in1;
+//       pinMode(trig, OUTPUT);
+//       digitalWrite(trig, LOW);
+//       pinMode(echo, INPUT);
+//     }
 
-    void DisparaPulsoUltrassonico(){
-      digitalWrite(trig, HIGH);
-      delayMicroseconds(10);
-      digitalWrite(trig, LOW);
-    }
+//     void DisparaPulsoUltrassonico(){
+//       digitalWrite(trig, HIGH);
+//       delayMicroseconds(10);
+//       digitalWrite(trig, LOW);
+//     }
 
 
-    // Função para calcular a distancia em metros
-    float CalculaDistancia(float tempo_us){
-      return((tempo_us*VelocidadeSom_mporus)/2);
-    }
+//     // Função para calcular a distancia em metros
+//     float CalculaDistancia(float tempo_us){
+//       return((tempo_us*VelocidadeSom_mporus)/2);
+//     }
 
   
-};
+// };
 
 // Classe para controle de um AGV (veículo autônomo)
 class AGV {
@@ -84,6 +84,7 @@ class AGV {
       Motor2.Backward();
     }
 
+
     // Método para o AGV virar para a esquerda
     void LeftAGV() {
       Motor1.Backward();
@@ -105,26 +106,36 @@ class AGV {
 
 // Instância dos motores e do AGV
 DCMotor Motor1, Motor2;
-AGV AGV1;
+// AGV AGV1;
 // HCSR04 Sensor1;
 
 void setup() {
-  AGV1.Create(5, 6, 9, 10);  // Inicializando o AGV com os pinos dos motores
+  Motor1.Pinout(12, 13);
+  Motor2.Pinout(14, 27);
+  // AGV1.Create(12, 13, 14, 27);  // Inicializando o AGV com os pinos dos motores
   Serial.begin(9600);  // Inicializando a comunicação serial para entrada de dados
   // Sensor1.PinOut(2, 3);
 }
 
 void loop() {
-  AGV1.ForwardAGV();
-  delay(10000);
-  AGV1.StopAGV();
+  Motor1.Forward();
+  Motor2.Forward();
   delay(2000);
-  AGV1.LeftAGV();
-  delay(10000);
-  AGV1.BackwardAGV();
-  delay(10000);
-  AGV1.RightAGV();
-  delay(10000);
-  AGV1.StopAGV();
-  delay(30000);
+  Motor2.Stop();
+  delay(500);
+  Motor2.Backward();
+  delay(2000);
+
+  // AGV1.ForwardAGV();
+  // delay(10000);
+  // AGV1.StopAGV();
+  // delay(2000);
+  // AGV1.LeftAGV();
+  // delay(10000);
+  // AGV1.BackwardAGV();
+  // delay(10000);
+  // AGV1.RightAGV();
+  // delay(10000);
+  // AGV1.StopAGV();
+  // delay(30000);
 }
