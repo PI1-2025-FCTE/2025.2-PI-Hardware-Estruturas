@@ -41,7 +41,7 @@ float Encoder::calcularDistancia() {
     float distancia = 0.0;
     float distanciaPorRevolucao = 21.36; // 3.14159 * 6.8;
     float giros = interrupcoes / 20.0; //furosPorRevolucao = 20;
-    distancia = giros * distanciaPorRevolucao;
+    distancia = giros * distanciaPorRevolucao / 2.0;
     return distancia;
 }
 

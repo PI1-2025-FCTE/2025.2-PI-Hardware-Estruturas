@@ -20,16 +20,23 @@ void DCMotor::Speed(int in1) {
 }
 
 void DCMotor::Forward() {
+    Serial.printf("Ligando pino %d em %d e desligando %d\n", pin1, spd, pin2);    
     analogWrite(pin1, spd);
+    analogWrite(pin2, 0);
     digitalWrite(pin2, LOW);
 }
 
 void DCMotor::Backward() {
+    Serial.printf("Ligando pino %d em %d e desligando %d\n", pin2, spd, pin1);
+    analogWrite(pin1, 0);
     digitalWrite(pin1, LOW);
     analogWrite(pin2, spd);
 }
 
 void DCMotor::Stop() {
+    Serial.printf("Desligando pinos %d e %d\n", pin1, pin2);
+    analogWrite(pin1, 0);
+    analogWrite(pin2, 0);
     digitalWrite(pin1, LOW);
     digitalWrite(pin2, LOW);
 }

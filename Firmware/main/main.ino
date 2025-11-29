@@ -78,9 +78,9 @@ void setup() {
   delay(1000);
   
   servo_1.attach(15);
-  AGV1.Create(12, 13, 14, 27, 220);  // Inicializando o AGV com os pinos dos motores
+  AGV1.Create(25, 26, 33, 32, 220);  // Inicializando o AGV com os pinos dos motores
   // AGV1.Sensores(25, 26, 25, 4); // Inicializando os sensores do AGV: Ultrassônico (trig, echo), Encoders (pino1, pino2), diâmetro da roda em cm
-  encoderEsq.PinOut(25, 0); // Exemplo
+  encoderEsq.PinOut(27, 0); // Exemplo
   encoderDir.PinOut(4, 1); // Exemplo
   // Inicializando I2C_1 para o INA219
   I2C_1.begin(SDA_1, SCL_1, 100000);
@@ -111,9 +111,9 @@ void setup() {
   
   // servo_1.write(180);
   // Serial.println("MOVE TO POS_180");   
-  AGV1.ForwardAGV();           
-  delay(4000);   
-  AGV1.StopAGV();
+  // AGV1.ForwardAGV();           
+  // delay(4000);   
+  // AGV1.StopAGV();
 }
 
 void loop() {
@@ -148,22 +148,41 @@ void loop() {
   // delay(3000);
   // servo_1.write(180);
   // delay(3000);
-  Serial.println(encoderEsq.calcularDistancia());
-  Serial.println(encoderDir.calcularDistancia());
+  // Serial.println(encoderEsq.calcularDistancia());
+  // Serial.println(encoderDir.calcularDistancia());
   delay(100);
   // AGV1.LeftAGV();
   // delay(2000);
   // AGV1.RightAGV();
   // delay(2000);
   // AGV1.ForwardAGV();
-  if(Serial.available()){
-    char leitura = Serial.read();
+  if(SerialBT.available()){
+    char leitura = SerialBT.read();
     if (leitura == 'a'){
       distanciaPorCm(50.0); // Move o AGV para frente por 50 cm
+      // AGV1.ForwardAGV();
+      // Serial.println("AGV Andando pra frente");
+      // delay(5000);
+      // AGV1.StopAGV();
+      // Serial.println("AGV Parado");
+    } else if (leitura == 'b'){
+      distanciaPorCm(100.0);
     } else if (leitura == 'd'){
       encoderDir.deletaDistancia();
       encoderEsq.deletaDistancia();
+    } else if (leitura == 'f'){
+      // Serial.println("AGV andando pra frente");
+      // AGV1.ForwardAGV();
+      distanciaPorCm(200.0);
+    } else if (leitura == 't'){
+      // Serial.println("AGV andando pra tras");
+      // AGV1.BackwardAGV();
+      distanciaPorCm(500.0);
+    } else if (leitura == 'p'){
+      // Serial.println("AGV parado");
+      // AGV1.StopAGV();
     }
+
   }
   // AGV1.StopAGV();
   // delay(10000);
@@ -194,6 +213,7 @@ void distanciaPorCm(float cm) {
     while(dist < cm) {
         dist = encoderDir.calcularDistancia();
         Serial.printf("Distancia = %f\n", dist);
+        SerialBT.printf("Distancia = %f\n", dist);
         delay(100);
     }
     AGV1.StopAGV();
