@@ -102,6 +102,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     // Agora, atribua uma cópia para comandosEnviados
     t.comandosEnviados = strdup(buffer); // strdup faz cópia dinâmica
     Serial.printf("Comando recebido e armazenado: %s\n", t.comandosEnviados);
+    decodificaExecutaInstrucao();
 }
 
 // // Serializa Trajeto para JSON e publica
