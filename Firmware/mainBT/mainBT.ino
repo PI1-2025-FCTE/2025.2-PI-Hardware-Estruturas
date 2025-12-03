@@ -2,31 +2,31 @@
 #include <Adafruit_INA219.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
-#include <WiFi.h>
-#include <PubSubClient.h>
-#include <ArduinoJson.h>
-#include <ArduinoOTA.h>
-#include "WiFiUdp.h"
-// #include "HCSR04.h"
+#include "HCSR04.h"
+// #include <WiFi.h>
+// #include <PubSubClient.h>
+// #include <ArduinoJson.h>
+// #include <ArduinoOTA.h>
+// #include "WiFiUdp.h"
 // #include "../bateria/bateria.h"
 #include "Atuadores.h"
 #include "Encoder.h"
 #include <ESP32Servo.h>
 
 // === Bluetooth ===
-// #include "BluetoothSerial.h"
-// String device_name = "ESP32-BT-Logger";
-// BluetoothSerial SerialBT;
+#include "BluetoothSerial.h"
+String device_name = "ESP32-BT-Logger";
+BluetoothSerial SerialBT;
 
 // Check if Bluetooth is available
-// #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-// #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-// #endif
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
 
-// // Check Serial Port Profile
-// #if !defined(CONFIG_BT_SPP_ENABLED)
-// #error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
-// #endif
+// Check Serial Port Profile
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
+#endif
 
 // === Definição dos pinos I2C ===
 #define SDA_1 19
@@ -39,18 +39,13 @@ typedef struct Trajeto {
   String comandosEnviados;    // única string, texto longo
   String comandosExecutados;  // idem
   int status;
-  long tempo;
+  int tempo;
   int ID;
 } Trajeto;
 
 Trajeto t;
 
-int distanciaUltrassom;
-bool trajetoComprometido = false;
-bool condicaoDeParada = false;
-bool trajetoInterceptado = false;
 bool umComandoFoiRecebido = false;
-bool trajetoPodeSerPublicado = false;
 // === Wifi ===
 // Configurações WiFi
 const char* ssid = "ANDRE_5907";
@@ -58,8 +53,8 @@ const char* password = "99634M{m";
 
 // === Comunicacao MQTT ===
 // Configurações MQTT
-const char* mqtt_server = "192.168.137.1";  // Exemplo: "broker.hivemq.com"
-const int mqtt_port = 1883;
+const char* mqtt_server = "0.tcp.sa.ngrok.io";  // Exemplo: "broker.hivemq.com"
+const int mqtt_port = 19127;
 const char* mqtt_user = "user";      // seu usuário MQTT
 const char* mqtt_pass = "password";  // sua senha MQTT
 const char* data_topic = "esp32.data";
@@ -68,13 +63,13 @@ const char* status_topic = "devices/esp32/status";
 const char* trajeto_topic = "devices/esp32/trajeto";
 const char* client_topic = "devices/esp32/commands";
 // Instancia WiFi e MQTT
-WiFiClient espClient;
-PubSubClient client(espClient);
+// WiFiClient espClient;
+// PubSubClient client(espClient);
 
 // === Comunicacao UDP ===
-WiFiUDP udp;
-const char* udp_host = "192.168.0.10";  // IP do PC/servidor que vai receber
-const uint16_t udp_port = 5005;         // porta em que o PC escuta (ex.: 5005)
+// WiFiUDP udp;
+// const char* udp_host = "192.168.0.10";  // IP do PC/servidor que vai receber
+// const uint16_t udp_port = 5005;         // porta em que o PC escuta (ex.: 5005)
 
 // === Giroscópio ===
 // float yaw = 0.0;
@@ -104,15 +99,13 @@ float porcentagem;
 #define TENSAO_MINIMA 5.5
 
 Adafruit_MPU6050 mpu6050;
-// unsigned long lastStatusTime = 0;
+unsigned long lastStatusTime = 0;
 // Instância dos motores e do AGV
 // DCMotor Motor1, Motor2;
 AGV AGV1;
 Encoder encoderEsq(0);
 Encoder encoderDir(1);
-// HCSR04 sensorUltrassonico;
-#define trigPin 17
-#define echoPin 5
+HCSR04 sensorUltrassonico;
 Servo servo_1;
 uint8_t motor_angle;
 
@@ -120,20 +113,17 @@ void setup() {
   Serial.begin(115200);
   delay(3000);
 
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
-  
-  // Ensure trigger pin is low
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
+  SerialBT.begin(device_name);  //Bluetooth device name
+  SerialBT.deleteAllBondedDevices(); // Uncomment this to delete paired devices; Must be called after begin
+  Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", device_name.c_str());
+  delay(1000);
 
-  // sensorUltrassonico.PinOut(17, 5);
-  setup_wifi();
-  client.setServer(mqtt_server, mqtt_port);
-  client.setCallback(callback);
-  reconnect();
-  ArduinoOTA.begin();
-
+  // setup_wifi();
+  // client.setServer(mqtt_server, mqtt_port);
+  // client.setCallback(callback);
+  // reconnect();
+  // ArduinoOTA.begin();
+  sensorUltrassonico.PinOut(17, 5);
   servo_1.attach(15);
   AGV1.Create(25, 26, 33, 32, 220);  // Inicializando o AGV com os pinos dos motores
   encoderEsq.PinOut(27, 0);          // Exemplo
@@ -156,14 +146,14 @@ void setup() {
   }
 
   Serial.println("Pronto para leituras!\n");
-  // lastStatusTime = millis();
+  lastStatusTime = millis();
 
   // logQueue = xQueueCreate(20, sizeof(const char*));
 
   xTaskCreatePinnedToCore(taskColetaDados, "Data", 4096, NULL, 1, NULL, 1);
   // xTaskCreatePinnedToCore(taskExec, "Exec", 4096, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(taskOTA, "OTA", 4096, NULL, 1, NULL, 0);
-  xTaskCreatePinnedToCore(taskWifi, "TMQTT", 4096, NULL, 1, NULL, 0);
+  // xTaskCreatePinnedToCore(taskBluetooth, "Logger", 4096, NULL, 1, NULL, 0);
+  // xTaskCreatePinnedToCore(taskWifi, "TCP e OTA", 4096, NULL, 1, NULL, 0);
   // xTaskCreatePinnedToCore(taskBlink, "Blink", 2048, NULL, 1, NULL, 1);
 
   servo_1.write(180);  // Posição inicial do servo
@@ -172,23 +162,17 @@ void setup() {
 void loop() {
 
   // SerialBT.println("===== Monitor de Bateria =====");
-  // Teste();
-  if (umComandoFoiRecebido) {
-    long tempoTrajetoInicio = millis();
-    decodificaExecutaInstrucao(t.comandosEnviados);
-    if (!trajetoInterceptado){
-      if (distanciaUltrassom < 4){
-        entregaCarga();
-      } else {
-          trajetoComprometido = true;
-      }
-    } else {
-        trajetoInterceptado = false;
-    }
-    t.tempo = millis() - tempoTrajetoInicio;
-    trajetoPodeSerPublicado = true;
-    umComandoFoiRecebido = false;
-  }
+  Teste();
+  // if (umComandoFoiRecebido) {
+  //   decodificaExecutaInstrucao(t.comandosEnviados);
+  //   entregaCarga();
+  //   // publicarTrajeto(t);
+  //   t.comandosEnviados = "";
+  //   t.comandosExecutados = "";
+  //   t.ID = 0;
+  //   t.tempo = 0;
+  //   umComandoFoiRecebido = false;
+  // }
 }
 
 // === Enfileira mensagens de log ===
@@ -201,34 +185,36 @@ void loop() {
 void taskColetaDados(void* pvParameters) {
   for (;;) {
     monitorarBateria();
-    distanciaUltrassom = calculaDistancia();
-    Serial.printf("Distancia do sensor HSRC = %d cm\n", distanciaUltrassom);
-    publicarStatus();
-    vTaskDelay(pdMS_TO_TICKS(500));
+    // publicarStatus();
+    float distancia = sensorUltrassonico.CalculaDistancia();
+    SerialBT.printf("Distancia: %f metros\n");
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
-void taskWifi(void* pvParameters) {
-  for (;;) {
-    if (!client.connected()) {
-      reconnect();
-    }
-    client.loop();
-    if(trajetoPodeSerPublicado){
-      publicarTrajeto(t);
-      trajetoPodeSerPublicado = false;
-    }
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
-}
+// void taskBluetooth(void* pvParameters) {
+//     for(;;){
+//       SerialBT.println("===== Leitura INA219 =====");
+//       SerialBT.printf("Corrente = %f mA | Tensao = %f | Potencia = %f mW\n", current, voltage, power);
+//       // SerialBT.println("===== Leitura MPU6050 =====");
+//       // SerialBT.printf("Acelerômetro: X= %f m/s^2 Y= %f m/s^2 Z= %f m/s^2\n", a.acceleration.x, a.acceleration.y, a.acceleration.z);
+//       // SerialBT.printf("Giroscópio: X= %f rad/s Y= %f rad/s Z=%f rad/s\n", g.gyro.x, g.gyro.y, g.gyro.z);
+//       // SerialBT.printf("Temperatura: %f C\n", temp.temperature);
+//       // SerialBT.printf("Yaw Atual: %f graus\n", atualizarYaw());
+//       vTaskDelay(pdMS_TO_TICKS(500));
+//     }
+// }
 
-// === Task OTA (Core 0) ===
-void taskOTA(void* pvParameters) {
-  for (;;) {
-    ArduinoOTA.handle();
-    vTaskDelay(pdMS_TO_TICKS(50));
-  }
-}
+// void taskWifi(void* pvParameters) {
+//   for (;;) {
+//     if (!client.connected()) {
+//       reconnect();
+//     }
+//     ArduinoOTA.handle();
+//     client.loop();
+//     vTaskDelay(pdMS_TO_TICKS(50));
+//   }
+// }
 
 void entregaCarga(){
   servo_1.write(180);
@@ -249,13 +235,10 @@ int distanciaPorCm(float cm) {
   encoderEsq.deletaDistancia();
   AGV1.ForwardAGV();
   while (dist < cm) {
-    if(condicaoDeParada) {
-      break;
-    }
     dist = encoderDir.calcularDistancia();
     Serial.printf("Distancia = %f\n", dist);
-    UdpLogf("Distancia = %f\n", dist);
-    // SerialBT.printf("Distancia = %f\n", dist);
+    // UdpLogf("Distancia = %f\n", dist);
+    SerialBT.printf("Distancia = %f\n", dist);
     delay(100);
   }
   AGV1.StopAGV();
@@ -269,14 +252,11 @@ void Gira90GrausDireita() {
   encoderDir.deletaDistancia();
   encoderEsq.deletaDistancia();
   AGV1.RightAGV();           // Diametro entre rodas = 19.45 cm
-  while (dist < 13.40082312) {  // 19.45 * 3.14 * (90.0 / 360.0) calcula o comprimento do arco para 90 graus
-    if(condicaoDeParada) {
-      break;
-    }
+  while (dist < 15.26825) {  // 19.45 * 3.14 * (90.0 / 360.0) calcula o comprimento do arco para 90 graus
     dist = encoderDir.calcularDistancia();
     Serial.printf("Distancia = %f\n", dist);
-    UdpLogf("Distancia = %f\n", dist);
-    // SerialBT.printf("Distancia = %f\n", dist);
+    // UdpLogf("Distancia = %f\n", dist);
+    SerialBT.printf("Distancia = %f\n", dist);
     delay(100);
   }
   AGV1.StopAGV();
@@ -290,14 +270,11 @@ void Gira90GrausEsquerda() {
   encoderDir.deletaDistancia();
   encoderEsq.deletaDistancia();
   AGV1.LeftAGV();
-  while (dist < 13.40082312) {  // 19.45 * 3.14 * (90.0 / 360.0) calcula o comprimento do arco para 90 graus
-    if(condicaoDeParada) {
-      break;
-    }
+  while (dist < 15.26825) {  // 19.45 * 3.14 * (90.0 / 360.0) calcula o comprimento do arco para 90 graus
     dist = encoderDir.calcularDistancia();
-    Serial.printf("Distancia = %d\n", dist);
-    UdpLogf("Distancia = %f\n", dist);
-    // SerialBT.printf("Distancia = %f\n", dist);
+    Serial.printf("Distancia = %f\n", dist);
+    // UdpLogf("Distancia = %f\n", dist);
+    SerialBT.printf("Distancia = %f\n", dist);
     delay(100);
   }
   AGV1.StopAGV();
@@ -311,11 +288,6 @@ void decodificaExecutaInstrucao(String buffer) {
   int i = 0;
   Serial.printf("Buffer: %s\n", buffer.c_str());  // .c_str() converte String para const char*
   while (i < buffer.length()) {                   // .length() ao invés de strlen()
-    if(condicaoDeParada) {
-      condicaoDeParada = false;
-      trajetoInterceptado = true;
-      break;
-    }
     if (buffer[i] == 'a') {
       // char comprimento[5] = "";
       i++;  // Avança para o primeiro dígito após o 'a'
@@ -326,6 +298,7 @@ void decodificaExecutaInstrucao(String buffer) {
 
       int valor = numeroStr.toInt();  // Converte String → int
       Serial.printf("Avancando %d cm\n", valor);
+      SerialBT.printf("Avancando %d cm\n", valor);
       int dist = distanciaPorCm((float)valor) * 100;
       String cmd = "a";
 
@@ -341,24 +314,25 @@ void decodificaExecutaInstrucao(String buffer) {
       // SerialBT.printf("Comando executado: %s", t.comandosExecutados);
       // logMessage("Comando executado: %s", t.comandosExecutados);
       Serial.printf("Comando executado: %s", t.comandosExecutados.c_str());
-      UdpLogf("Comando executado: %s", t.comandosExecutados.c_str());
+      SerialBT.printf("Comando executado: %s", t.comandosExecutados.c_str());
       i = fim;  // Pula os 4 dígitos
     } else if (buffer[i] == 'd') {
       Serial.printf("Virando à direita\n");
+      SerialBT.printf("Virando à direita\n");
       Gira90GrausDireita();
       i++;
       t.comandosExecutados += 'd';
-      // SerialBT.printf("Comando executado: %s", t.comandosExecutados);
+      SerialBT.printf("Comando executado: %s", t.comandosExecutados);
       Serial.printf("Comando executado: %s\n", t.comandosExecutados.c_str());
-      UdpLogf("Comando executado: %s", t.comandosExecutados.c_str());
+      // UdpLogf("Comando executado: %s", t.comandosExecutados.c_str());
     } else if (buffer[i] == 'e') {
       Serial.printf("Virando à esquerda\n");
       Gira90GrausEsquerda();
       i++;
       t.comandosExecutados += 'e';
-      // SerialBT.printf("Comando executado: %s", t.comandosExecutados);
+      SerialBT.printf("Comando executado: %s", t.comandosExecutados);
       Serial.printf("Comando executado: %s\n", t.comandosExecutados.c_str());
-      UdpLogf("Comando executado: %s", t.comandosExecutados.c_str());
+      // UdpLogf("Comando executado: %s", t.comandosExecutados.c_str());
     } else if (buffer[i] == 'i') {
       i++;
       int fim = min(i + 2, (int)buffer.length());
@@ -366,7 +340,7 @@ void decodificaExecutaInstrucao(String buffer) {
       t.ID = numeroStr.toInt();
       ;
       Serial.printf("ID do trajeto: %d\n", t.ID);
-      UdpLogf("ID do trajeto: %d", t.ID);
+      SerialBT.printf("ID do trajeto: %d", t.ID);
     } else {
       i++;  // Pula caracteres desconhecidos
     }
@@ -375,10 +349,10 @@ void decodificaExecutaInstrucao(String buffer) {
 
 
 void Teste() {
-  if (Serial.available()) {
-    String leitura = Serial.readStringUntil('\n');
+  if (SerialBT.available()) {
+    String leitura = SerialBT.readStringUntil('\n');
     leitura.trim();  // Remove \r\n e espaços
-    Serial.printf("Comando recebido: [%s]", leitura);
+    SerialBT.printf("Comando recebido: [%s]", leitura);
     // SerialBT.printf("Comando recebido: [%s]", leitura);
     if (leitura == "andar1") {
       distanciaPorCm(50.0);  // Move o AGV para frente por 50 cm
@@ -411,118 +385,103 @@ void Teste() {
       Gira90GrausEsquerda();
     } else {
       decodificaExecutaInstrucao(leitura);
+      entregaCarga();
     }
   }
 }
 
 // === Funcoes do Wifi e MQTT
-// Publica o status
-void publicarStatus() {
-  StaticJsonDocument<128> doc;
-  doc["online"] = true;  //alterar isto
-  doc["battery"] = porcentagem;   //alterar isto
-  char buffer[128];
-  size_t n = serializeJson(doc, buffer);
-  client.publish(status_topic, buffer, n);
-  // Serial.println("Status publicado!");
-}
+// // Publica o status
+// void publicarStatus() {
+//   StaticJsonDocument<128> doc;
+//   doc["online"] = true;  //alterar isto
+//   doc["bateria"] = porcentagem;   //alterar isto
+//   char buffer[128];
+//   size_t n = serializeJson(doc, buffer);
+//   client.publish(status_topic, buffer, n);
+//   // Serial.println("Status publicado!");
+// }
 
-// Publica o trajeto
-void publicarTrajeto(Trajeto trajeto) {
-  StaticJsonDocument<192> doc;
-  doc["idTrajeto"] = trajeto.ID;
-  doc["Executadas"] = trajeto.comandosExecutados;
-  doc["device_id"] = "esp32";
-  doc["tempo"] = t.tempo;
-  if(trajetoComprometido){
-    doc["status"] = false;
-  } else {
-    doc["status"] = true;
-  }
-  trajetoComprometido = false;
-  char buffer[192];
-  size_t n = serializeJson(doc, buffer);
-  client.publish(trajeto_topic, buffer, n);
-  Serial.println("Trajeto publicado!");
-  t.comandosEnviados = "";
-  t.comandosExecutados = "";
-  t.ID = 0;
-  t.tempo = 0;
-}
+// // Publica o trajeto
+// void publicarTrajeto(Trajeto trajeto) {
+//   StaticJsonDocument<192> doc;
+//   doc["idTrajeto"] = trajeto.ID;
+//   doc["Executadas"] = trajeto.comandosExecutados;
+//   doc["device_id"] = "esp32";
+//   char buffer[192];
+//   size_t n = serializeJson(doc, buffer);
+//   client.publish(trajeto_topic, buffer, n);
+//   Serial.println("Trajeto publicado!");
+// }
 
-// Função para conectar WiFi
-void setup_wifi() {
-  delay(10);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.printf("Nao foi possivel conectar-se ao wifi.\n");
-    delay(500);
-  }
-  Serial.printf("Conectado ao wifi!\n");
-  digitalWrite(2, HIGH);
-  udp.begin(12345);  // porta local qualquer
-}
+// // Função para conectar WiFi
+// void setup_wifi() {
+//   delay(10);
+//   WiFi.begin(ssid, password);
+//   while (WiFi.status() != WL_CONNECTED) {
+//     Serial.printf("Nao foi possivel conectar-se ao wifi.\n");
+//     delay(500);
+//   }
+//   Serial.printf("Conectado ao wifi!\n");
+//   digitalWrite(2, HIGH);
+//   udp.begin(12345);  // porta local qualquer
+// }
 
-// Função para conectar MQTT
-void reconnect() {
-  while (!client.connected()) {
-    if (client.connect("ESP32Client", mqtt_user, mqtt_pass)) {
-      Serial.printf("Conectado ao cliente!\n");
-      client.subscribe(client_topic);
-      digitalWrite(2, LOW);
-      delay(100);
-      digitalWrite(2, HIGH);
-      delay(100);
-      digitalWrite(2, LOW);
-      delay(100);
-      digitalWrite(2, HIGH);
-    } else {
-      // if(Serial.available()){
-      //   String mqtt_server = Serial.readStringUntil('\n');
-      // }
-      delay(5000);
-      Serial.println("Tentando conectar-se ao cliente.");
-    }
-  }
-}
+// // Função para conectar MQTT
+// void reconnect() {
+//   while (!client.connected()) {
+//     if (client.connect("ESP32Client", mqtt_user, mqtt_pass)) {
+//       Serial.printf("Conectado ao cliente!\n");
+//       client.subscribe(client_topic);
+//       digitalWrite(2, LOW);
+//       delay(100);
+//       digitalWrite(2, HIGH);
+//       delay(100);
+//       digitalWrite(2, LOW);
+//       delay(100);
+//       digitalWrite(2, HIGH);
+//     } else {
+//       // if(Serial.available()){
+//       //   String mqtt_server = Serial.readStringUntil('\n');
+//       // }
+//       delay(5000);
+//       Serial.println("Tentando conectar-se ao cliente.");
+//     }
+//   }
+// }
 
-//Funcao que recebe mensagens
-void callback(char* topic, byte* payload, unsigned int length) {
-  // Crie um buffer para armazenar a string do payload
-  char buffer[256];
-  if (length >= sizeof(buffer)) length = sizeof(buffer) - 1;  // evita overflow
-  memcpy(buffer, payload, length);
-  buffer[length] = '\0';  // Termina a string corretamente
-  Serial.println("Foram recebidos comandos!");
-  UdpLogf("Comando recebido via MQTT: %s", buffer);
-  // Agora, atribua uma cópia para comandosEnviados
-  t.comandosEnviados = String(buffer);  // strdup faz cópia dinâmica
-  if(t.comandosEnviados == "STOP"){
-    condicaoDeParada = true;
-    Serial.println("CARRINHO DEVE PARAR");
-  } else {
-    Serial.printf("Comando recebido e armazenado: %s\n", t.comandosEnviados);
-    umComandoFoiRecebido = true;
-  }
-}
+// //Funcao que recebe mensagens
+// void callback(char* topic, byte* payload, unsigned int length) {
+//   // Crie um buffer para armazenar a string do payload
+//   char buffer[256];
+//   if (length >= sizeof(buffer)) length = sizeof(buffer) - 1;  // evita overflow
+//   memcpy(buffer, payload, length);
+//   buffer[length] = '\0';  // Termina a string corretamente
+//   Serial.println("Foram recebidos comandos!");
+//   UdpLogf("Comando recebido via MQTT: %s", buffer);
+//   // Agora, atribua uma cópia para comandosEnviados
+//   t.comandosEnviados = String(buffer);  // strdup faz cópia dinâmica
+//   Serial.printf("Comando recebido e armazenado: %s\n", t.comandosEnviados);
+//   umComandoFoiRecebido = true;
+// }
 
-// Funções para envio de logs via UDP
-void UdpLog(const char* msg) {
-  udp.beginPacket(udp_host, udp_port);
-  udp.write((const uint8_t*)msg, strlen(msg));
-  udp.endPacket();
-}
+// // Funções para envio de logs via UDP
+// void UdpLog(const char* msg) {
+//   udp.beginPacket(udp_host, udp_port);
+//   udp.write((const uint8_t*)msg, strlen(msg));
+//   udp.endPacket();
+// }
 
-void UdpLogf(const char* fmt, ...) {
-  char buf[256];
-  va_list args;
-  va_start(args, fmt);
-  vsnprintf(buf, sizeof(buf), fmt, args);
-  va_end(args);
-  UdpLog(buf);
-}
+// void UdpLogf(const char* fmt, ...) {
+//   char buf[256];
+//   va_list args;
+//   va_start(args, fmt);
+//   vsnprintf(buf, sizeof(buf), fmt, args);
+//   va_end(args);
+//   UdpLog(buf);
+// }
 
-int calculaDistancia(){
+void calculaDistancia() {
     // Send a 10 microsecond high pulse to trigger the sensor
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
@@ -533,7 +492,11 @@ int calculaDistancia(){
 
   // Calculate distance in centimetres
   int distance = duration * 0.034 / 2;
-  return distance;
+
+  // Print the distance in cm
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
 }
 
 void monitorarBateria() {
@@ -553,9 +516,20 @@ void monitorarBateria() {
   Serial.print(porcentagem);
   Serial.println(" %");
   
+  SerialBT.print("Tensão: ");
+  SerialBT.print(voltagemBateria, 2);
+  SerialBT.print(" V | Corrente: ");
+  SerialBT.print(correnteAmperes, 3);
+  SerialBT.print(" A | Potência: ");
+  SerialBT.print(potenciaWatts, 3);
+  SerialBT.print(" W | Bateria: ");
+  SerialBT.print(porcentagem);
+  SerialBT.println(" %");
+  
   // Aviso de bateria baixa
   if (porcentagem <= 20) {
     Serial.println("AVISO: Bateria baixa!");
+    SerialBT.println("AVISO: Bateria baixa!");
   }
 }
 
