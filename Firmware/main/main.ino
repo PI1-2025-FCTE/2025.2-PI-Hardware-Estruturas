@@ -253,14 +253,15 @@ int distanciaPorCm(float cm) {
       break;
     }
     dist = encoderDir.calcularDistancia();
-    Serial.printf("Distancia = %f\n", dist);
-    UdpLogf("Distancia = %f\n", dist);
+    // Serial.printf("Distancia = %f\n", dist);
+    // UdpLogf("Distancia = %f\n", dist);
     // SerialBT.printf("Distancia = %f\n", dist);
-    delay(100);
+    // delay(100);
   }
   AGV1.StopAGV();
   encoderDir.deletaDistancia();
   encoderEsq.deletaDistancia();
+  delay(1000);
   return dist;
 }
 
@@ -269,19 +270,20 @@ void Gira90GrausDireita() {
   encoderDir.deletaDistancia();
   encoderEsq.deletaDistancia();
   AGV1.RightAGV();           // Diametro entre rodas = 19.45 cm
-  while (dist < 13.40082312) {  // 19.45 * 3.14 * (90.0 / 360.0) calcula o comprimento do arco para 90 graus
+  while (dist < 14) {  // 19.45 * 3.14 * (90.0 / 360.0) calcula o comprimento do arco para 90 graus
     if(condicaoDeParada) {
       break;
     }
     dist = encoderDir.calcularDistancia();
-    Serial.printf("Distancia = %f\n", dist);
-    UdpLogf("Distancia = %f\n", dist);
+    // Serial.printf("Distancia = %f\n", dist);
+    // UdpLogf("Distancia = %f\n", dist);
     // SerialBT.printf("Distancia = %f\n", dist);
-    delay(100);
+    // delay(100);
   }
   AGV1.StopAGV();
   encoderDir.deletaDistancia();
   encoderEsq.deletaDistancia();
+  delay(1000);
   // return dist;
 }
 
@@ -290,20 +292,21 @@ void Gira90GrausEsquerda() {
   encoderDir.deletaDistancia();
   encoderEsq.deletaDistancia();
   AGV1.LeftAGV();
-  while (dist < 13.40082312) {  // 19.45 * 3.14 * (90.0 / 360.0) calcula o comprimento do arco para 90 graus
+  while (dist < 15) {  // 19.45 * 3.14 * (90.0 / 360.0) calcula o comprimento do arco para 90 graus (teste com 13.40082312)
     if(condicaoDeParada) {
       break;
     }
     dist = encoderDir.calcularDistancia();
-    Serial.printf("Distancia = %d\n", dist);
-    UdpLogf("Distancia = %f\n", dist);
+    // Serial.printf("Distancia = %d\n", dist);
+    // UdpLogf("Distancia = %f\n", dist);
     // SerialBT.printf("Distancia = %f\n", dist);
-    delay(100);
+    // delay(100);
   }
   AGV1.StopAGV();
   AGV1.StopAGV();
   encoderDir.deletaDistancia();
   encoderEsq.deletaDistancia();
+  delay(1000);
   // return dist;
 }
 
